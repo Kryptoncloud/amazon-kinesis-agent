@@ -16,6 +16,7 @@ package com.amazon.kinesis.streaming.agent.tailing;
 import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 
 import lombok.Getter;
 import lombok.ToString;
@@ -42,12 +43,19 @@ public class KinesisFileFlow extends FileFlow<KinesisRecord> {
     @Getter protected final String id;
     @Getter protected final String destination;
     @Getter protected final PartitionKeyOption partitionKeyOption;
+    @Getter protected final Pattern partitionKeyPattern;
 
     public KinesisFileFlow(AgentContext context, Configuration config) {
         super(context, config);
         destination = readString(KinesisConstants.DESTINATION_KEY);
         id = "kinesis:" + destination + ":" + sourceFile.toString();
         partitionKeyOption = readEnum(PartitionKeyOption.class, KinesisConstants.PARTITION_KEY, PartitionKeyOption.RANDOM);
+        if (partitionKeyOption == PartitionKeyOption.PATTERN) {
+            String strValue = readString(KinesisConstants.PARTITION_PATTERN);
+            partitionKeyPattern = Pattern.compile(strValue);
+        } else {
+            partitionKeyPattern = null;
+        }
     }
 
     @Override

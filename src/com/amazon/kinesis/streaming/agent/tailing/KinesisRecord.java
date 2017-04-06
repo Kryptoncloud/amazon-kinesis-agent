@@ -15,6 +15,8 @@ package com.amazon.kinesis.streaming.agent.tailing;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.amazon.kinesis.streaming.agent.tailing.KinesisConstants.PartitionKeyOption;
 import com.google.common.annotations.VisibleForTesting;
@@ -23,18 +25,23 @@ import com.google.common.hash.Hasher;
 import com.google.common.hash.Hashing;
 
 public class KinesisRecord extends AbstractRecord {
+    protected final Pattern partitionKeyPattern;
     protected final String partitionKey;
-    
+
     public KinesisRecord(TrackedFile file, long offset, ByteBuffer data) {
         super(file, offset, data);
         Preconditions.checkNotNull(file);
-        partitionKey = generatePartitionKey(((KinesisFileFlow)file.getFlow()).getPartitionKeyOption());
+        KinesisFileFlow flow = (KinesisFileFlow)file.getFlow();
+        partitionKeyPattern = flow.getPartitionKeyPattern();
+        partitionKey = generatePartitionKey(flow.getPartitionKeyOption());
     }
 
     public KinesisRecord(TrackedFile file, long offset, byte[] data) {
         super(file, offset, data);
         Preconditions.checkNotNull(file);
-        partitionKey = generatePartitionKey(((KinesisFileFlow)file.getFlow()).getPartitionKeyOption());
+        KinesisFileFlow flow = (KinesisFileFlow)file.getFlow();
+        partitionKeyPattern = flow.getPartitionKeyPattern();
+        partitionKey = generatePartitionKey(flow.getPartitionKeyOption());
     }
     
     public String partitionKey() {
@@ -65,9 +72,18 @@ public class KinesisRecord extends AbstractRecord {
             hasher.putBytes(data.array());
             return hasher.hash().toString();
         }
+        if (option == PartitionKeyOption.PATTERN) {
+            Preconditions.checkNotNull(option);
+            String strData = new String(data.array());
+            Matcher matcher = partitionKeyPattern.matcher(strData);
+            if (matcher.matches() && matcher.groupCount() == 1) {
+                return matcher.group(1);
+            }
+            throw new IllegalStateException("No matches");
+        }
         if (option == PartitionKeyOption.RANDOM)
             return "" + ThreadLocalRandom.current().nextDouble(1000000);
-        
+
         return null;
     }
 }
