@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 
 import org.apache.commons.lang3.RandomUtils;
 import org.mockito.Mockito;
@@ -27,7 +28,7 @@ public class KinesisRecordTest extends TestBase {
     @SuppressWarnings("rawtypes")
     private FileFlow flow;
     private TrackedFile file;
-    
+
     @BeforeMethod
     public void setup() throws IOException {
         flow = Mockito.mock(KinesisFileFlow.class);
@@ -35,6 +36,11 @@ public class KinesisRecordTest extends TestBase {
         when(flow.getRecordTerminatorBytes()).thenReturn(KinesisFileFlow.DEFAULT_TRUNCATED_RECORD_TERMINATOR.getBytes(StandardCharsets.UTF_8));
         file = Mockito.mock(TrackedFile.class);
         when(file.getFlow()).thenReturn(flow);
+        Path path = Mockito.mock(Path.class);
+        Path fileNamePath = Mockito.mock(Path.class);
+        when(file.getPath()).thenReturn(path);
+        when(path.getFileName()).thenReturn(fileNamePath);
+        when(fileNamePath.toString()).thenReturn("tracked_file.txt");
     }
 
     @Test
@@ -62,16 +68,29 @@ public class KinesisRecordTest extends TestBase {
         Assert.assertEquals(record.length(), KinesisConstants.MAX_RECORD_SIZE_BYTES);
         Assert.assertTrue(ByteBuffers.toString(record.data, StandardCharsets.UTF_8).endsWith(KinesisFileFlow.DEFAULT_TRUNCATED_RECORD_TERMINATOR));
     }
-    
+
     @SuppressWarnings("rawtypes")
     @Test
-    public void testGeneratePartitionKey() {
+    public void testGenerateDeterministicPartitionKey() {
         final PartitionKeyOption partitionKeyOption = KinesisConstants.PartitionKeyOption.DETERMINISTIC;
         when(((KinesisFileFlow)flow).getPartitionKeyOption()).thenReturn(partitionKeyOption);
-        
+
         byte[] data = RandomUtils.nextBytes(200);
         KinesisRecord record = new KinesisRecord(file, 1023, data);
         Assert.assertNotNull(record.partitionKey());
+        Assert.assertEquals(record.partitionKey(), record.generatePartitionKey(partitionKeyOption));
+    }
+
+    @SuppressWarnings("rawtypes")
+    @Test
+    public void testGenerateFilePartitionKey() {
+        final PartitionKeyOption partitionKeyOption = PartitionKeyOption.FILE;
+        when(((KinesisFileFlow) flow).getPartitionKeyOption()).thenReturn(partitionKeyOption);
+
+        byte[] data = RandomUtils.nextBytes(200);
+        KinesisRecord record = new KinesisRecord(file, 1023, data);
+        Assert.assertNotNull(record.partitionKey());
+        Assert.assertEquals(record.partitionKey(), "tracked_file.txt");
         Assert.assertEquals(record.partitionKey(), record.generatePartitionKey(partitionKeyOption));
     }
 }
