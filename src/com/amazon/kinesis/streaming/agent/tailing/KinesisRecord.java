@@ -73,7 +73,6 @@ public class KinesisRecord extends AbstractRecord {
             return hasher.hash().toString();
         }
         if (option == PartitionKeyOption.PATTERN) {
-            Preconditions.checkNotNull(option);
             String strData = new String(data.array());
             Matcher matcher = partitionKeyPattern.matcher(strData);
             if (matcher.matches() && matcher.groupCount() == 1) {
