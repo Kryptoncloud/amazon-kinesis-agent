@@ -24,7 +24,7 @@ import com.google.common.hash.Hashing;
 
 public class KinesisRecord extends AbstractRecord {
     protected final String partitionKey;
-    
+
     public KinesisRecord(TrackedFile file, long offset, ByteBuffer data) {
         super(file, offset, data);
         Preconditions.checkNotNull(file);
@@ -36,7 +36,7 @@ public class KinesisRecord extends AbstractRecord {
         Preconditions.checkNotNull(file);
         partitionKey = generatePartitionKey(((KinesisFileFlow)file.getFlow()).getPartitionKeyOption());
     }
-    
+
     public String partitionKey() {
         return partitionKey;
     }
@@ -45,29 +45,32 @@ public class KinesisRecord extends AbstractRecord {
     public long lengthWithOverhead() {
         return length() + KinesisConstants.PER_RECORD_OVERHEAD_BYTES;
     }
-    
+
     @Override
     public long length() {
         return dataLength() + partitionKey.length();
     }
-    
+
     @Override
     protected int getMaxDataSize() {
         return KinesisConstants.MAX_RECORD_SIZE_BYTES - partitionKey.length();
     }
-    
+
     @VisibleForTesting
     String generatePartitionKey(PartitionKeyOption option) {
         Preconditions.checkNotNull(option);
-        
+
         if (option == PartitionKeyOption.DETERMINISTIC) {
             Hasher hasher = Hashing.md5().newHasher();
             hasher.putBytes(data.array());
             return hasher.hash().toString();
         }
+        if (option == PartitionKeyOption.FILE) {
+            return file.getPath().getFileName().toString();
+        }
         if (option == PartitionKeyOption.RANDOM)
             return "" + ThreadLocalRandom.current().nextDouble(1000000);
-        
+
         return null;
     }
 }

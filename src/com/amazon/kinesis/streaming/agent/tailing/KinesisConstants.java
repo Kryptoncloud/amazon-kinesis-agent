@@ -30,6 +30,7 @@ public class KinesisConstants extends Constants {
 
     public static enum PartitionKeyOption {
         RANDOM,
-        DETERMINISTIC
+        DETERMINISTIC,
+        FILE
     }
 }
