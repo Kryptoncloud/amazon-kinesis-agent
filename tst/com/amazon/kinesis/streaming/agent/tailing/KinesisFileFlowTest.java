@@ -67,6 +67,19 @@ public class KinesisFileFlowTest extends FileFlowTest<KinesisFileFlow> {
         assertEquals(ff4.getPartitionKeyOption(), KinesisConstants.PartitionKeyOption.PATTERN);
         assertEquals(ff4.getPartitionKeyFallbackOption(), KinesisConstants.PartitionKeyOption.DETERMINISTIC);
     }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testWrongFallbackOption() {
+        AgentContext context = TestUtils.getTestAgentContext();
+        final String file = "/var/log/message*";
+        buildFileFlow(context, new Configuration(new HashMap<String, Object>() {{
+            put("filePattern", file);
+            put(getDestinationKey(), "des1");
+            put(KinesisConstants.PARTITION_KEY, "PATTERN");
+            put(KinesisConstants.PARTITION_PATTERN, ".*([a-z]).*");
+            put(KinesisConstants.PARTITION_KEY_FALLBACK, "PATTERN");
+        }}));
+    }
     
     @DataProvider(name="badPartitionKeyOptionInConfig")
     public Object[][] testPartitionKeyOptionInConfigData(){
