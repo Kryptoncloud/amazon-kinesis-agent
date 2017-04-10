@@ -84,4 +84,20 @@ public class KinesisRecordTest extends TestBase {
         Assert.assertEquals(record.partitionKey(), "1234-5678");
         Assert.assertEquals(record.partitionKey(), record.generatePartitionKey(partitionKeyOption));
     }
+
+    @SuppressWarnings("rawtypes")
+    @Test
+    public void testGeneratePatternPartitionKeyFallback() {
+        final PartitionKeyOption partitionKeyOption = PartitionKeyOption.PATTERN;
+        when(((KinesisFileFlow) flow).getPartitionKeyOption()).thenReturn(partitionKeyOption);
+        final Pattern pattern = Pattern.compile(".*\"deviceId\"\\s*:\\s*\"([a-zA-Z0-9-]+)\".*");
+        when(((KinesisFileFlow) flow).getPartitionKeyPattern()).thenReturn(pattern);
+        when(((KinesisFileFlow) flow).getPartitionKeyFallbackOption()).thenReturn(PartitionKeyOption.DETERMINISTIC);
+
+        byte[] data = "{ \"weight\": 52 }".getBytes();
+        KinesisRecord record = new KinesisRecord(file, 1023, data);
+        Assert.assertNotNull(record.partitionKey());
+        Assert.assertEquals(record.partitionKey(), "25bd91e9a8fbe3bca4ed91f1a779520d");
+        Assert.assertEquals(record.partitionKey(), record.generatePartitionKey(partitionKeyOption));
+    }
 }

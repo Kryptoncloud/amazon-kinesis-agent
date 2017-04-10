@@ -43,6 +43,7 @@ public class KinesisFileFlow extends FileFlow<KinesisRecord> {
     @Getter protected final String id;
     @Getter protected final String destination;
     @Getter protected final PartitionKeyOption partitionKeyOption;
+    @Getter protected final PartitionKeyOption partitionKeyFallbackOption;
     @Getter protected final Pattern partitionKeyPattern;
 
     public KinesisFileFlow(AgentContext context, Configuration config) {
@@ -51,10 +52,15 @@ public class KinesisFileFlow extends FileFlow<KinesisRecord> {
         id = "kinesis:" + destination + ":" + sourceFile.toString();
         partitionKeyOption = readEnum(PartitionKeyOption.class, KinesisConstants.PARTITION_KEY, PartitionKeyOption.RANDOM);
         if (partitionKeyOption == PartitionKeyOption.PATTERN) {
+            partitionKeyFallbackOption = readEnum(PartitionKeyOption.class, KinesisConstants.PARTITION_KEY_FALLBACK, PartitionKeyOption.RANDOM);
+            if (partitionKeyOption == partitionKeyFallbackOption) {
+                throw new IllegalArgumentException("Fallback option repeats original option.");
+            }
             String strValue = readString(KinesisConstants.PARTITION_PATTERN);
             partitionKeyPattern = Pattern.compile(strValue);
         } else {
             partitionKeyPattern = null;
+            partitionKeyFallbackOption = null;
         }
     }
 

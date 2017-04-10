@@ -49,13 +49,23 @@ public class KinesisFileFlowTest extends FileFlowTest<KinesisFileFlow> {
         }}));
         KinesisFileFlow ff3 = buildFileFlow(context, new Configuration(new HashMap<String, Object>() {{
             put("filePattern", file);
-            put(getDestinationKey(), "des2");
+            put(getDestinationKey(), "des3");
             put(KinesisConstants.PARTITION_KEY, "PATTERN");
             put(KinesisConstants.PARTITION_PATTERN, ".*([a-z]).*");
+        }}));
+        KinesisFileFlow ff4 = buildFileFlow(context, new Configuration(new HashMap<String, Object>() {{
+            put("filePattern", file);
+            put(getDestinationKey(), "des4");
+            put(KinesisConstants.PARTITION_KEY, "PATTERN");
+            put(KinesisConstants.PARTITION_PATTERN, ".*([a-z]).*");
+            put(KinesisConstants.PARTITION_KEY_FALLBACK, "DETERMINISTIC");
         }}));
         assertEquals(ff1.getPartitionKeyOption(), KinesisConstants.PartitionKeyOption.DETERMINISTIC);
         assertEquals(ff2.getPartitionKeyOption(), KinesisConstants.PartitionKeyOption.RANDOM);
         assertEquals(ff3.getPartitionKeyOption(), KinesisConstants.PartitionKeyOption.PATTERN);
+        assertEquals(ff3.getPartitionKeyFallbackOption(), KinesisConstants.PartitionKeyOption.RANDOM);
+        assertEquals(ff4.getPartitionKeyOption(), KinesisConstants.PartitionKeyOption.PATTERN);
+        assertEquals(ff4.getPartitionKeyFallbackOption(), KinesisConstants.PartitionKeyOption.DETERMINISTIC);
     }
     
     @DataProvider(name="badPartitionKeyOptionInConfig")
