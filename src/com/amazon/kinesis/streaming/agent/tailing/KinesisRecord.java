@@ -22,6 +22,7 @@ import com.google.common.hash.Hashing;
 import org.slf4j.Logger;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Matcher;
@@ -42,7 +43,7 @@ public class KinesisRecord extends AbstractRecord {
     public KinesisRecord(TrackedFile file, long offset, ByteBuffer data) {
         super(file, offset, data);
         Preconditions.checkNotNull(file);
-        KinesisFileFlow flow = (KinesisFileFlow)file.getFlow();
+        KinesisFileFlow flow = (KinesisFileFlow) file.getFlow();
         partitionKey = generatePartitionKey(flow.getPartitionKeyOption());
     }
 
@@ -83,8 +84,7 @@ public class KinesisRecord extends AbstractRecord {
         }
         if (option == PartitionKeyOption.PATTERN) {
             KinesisFileFlow flow = (KinesisFileFlow) file.getFlow();
-            String strData = new String(data.array());
-            Matcher matcher = flow.getPartitionKeyPattern().matcher(strData);
+            Matcher matcher = flow.getPartitionKeyPattern().matcher(getRemainingString());
             if (matcher.matches() && matcher.groupCount() == 1) {
                 return matcher.group(1);
             } else {
@@ -103,10 +103,15 @@ public class KinesisRecord extends AbstractRecord {
         if (curMillis - lastWarnMillis > backoffMillis) {
             boolean isUpdated = lastWarningTime.compareAndSet(lastWarnMillis, curMillis);
             if (isUpdated) {
-                String strData = new String(data.array());
-                LOGGER.warn("No matches found in '" + strData + " by pattern'. Falling back to " + fallbackOption + ".");
+                LOGGER.error("Line [" + getRemainingString() + "] didn't match with pattern specified." +
+                        " Skipping errors for " + backoffMillis + "ms");
             }
         }
         return generatePartitionKey(fallbackOption);
+    }
+
+    private String getRemainingString() {
+        byte[] bytes = Arrays.copyOfRange(data.array(), data.arrayOffset(), data.arrayOffset() + data.remaining());
+        return new String(bytes, 0, bytes.length).trim();
     }
 }
