@@ -18,6 +18,8 @@ import com.amazon.kinesis.streaming.agent.Constants;
 public class KinesisConstants extends Constants {
     public static final String DESTINATION_KEY = "kinesisStream";
     public static final String PARTITION_KEY = "partitionKeyOption";
+    public static final String PARTITION_KEY_FALLBACK = "partitionKeyFallbackOption";
+    public static final String PARTITION_PATTERN = "partitionKeyPattern";
 
     public static final int PER_RECORD_OVERHEAD_BYTES = 0;
     public static final int MAX_RECORD_SIZE_BYTES = 1024 * 1024;
@@ -30,6 +32,7 @@ public class KinesisConstants extends Constants {
 
     public static enum PartitionKeyOption {
         RANDOM,
-        DETERMINISTIC
+        DETERMINISTIC,
+        PATTERN
     }
 }
